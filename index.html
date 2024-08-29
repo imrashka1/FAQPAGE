@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Company FAQ</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <h1>Company FAQ</h1>
+    
+    <!-- Question Submission Form -->
+    <div id="question-form">
+        <h2>Ask a Question</h2>
+        <input type="text" id="question-input" placeholder="Type your question here">
+        <button id="submit-question">Submit</button>
+    </div>
+
+    <!-- FAQ Section -->
+    <div id="faq-section">
+        <h2>Frequently Asked Questions</h2>
+        <div id="questions-container"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
+<style>
+    body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+}
+
+#question-form {
+    margin: 20px 0;
+}
+
+#question-input {
+    width: 80%;
+    padding: 10px;
+    margin-right: 10px;
+}
+
+#submit-question {
+    padding: 10px 20px;
+    cursor: pointer;
+}
+
+#faq-section {
+    margin-top: 40px;
+}
+
+#questions-container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.question-item {
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.question-text {
+    font-weight: bold;
+    color: #333;
+}
+
+.answer-text {
+    margin-top: 10px;
+    color: #666;
+}
+</style>
+<script>
+    // Load existing questions from the server
+window.onload = function() {
+    fetch('/api/questions')
+    .then(response => response.json())
+    .then(data => {
+        data.forEach(question => {
+            addQuestionToPage(question);
+        });
+    });
+};
+
+document.getElementById('submit-question').addEventListener('click', function() {
+    const questionInput = document.getElementById('question-input');
+    const questionText = questionInput.value.trim();
+
+    if (questionText) {
+        fetch('/api/questions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ question: questionText })
+        }).then(() => {
+            questionInput.value = '';
+            addQuestionToPage({ question: questionText, answer: '' });
+        });
+    } else {
+        alert('Please enter a question.');
+    }
+});
+
+function addQuestionToPage(question) {
+    const questionItem = document.createElement('div');
+    questionItem.classList.add('question-item');
+
+    const questionElement = document.createElement('p');
+    questionElement.classList.add('question-text');
+    questionElement.textContent = question.question;
+
+    const answerElement = document.createElement('p');
+    answerElement.classList.add('answer-text');
+    answerElement.textContent = question.answer || "Pending Admin Response";
+
+    questionItem.appendChild(questionElement);
+    questionItem.appendChild(answerElement);
+
+    if (!question.answer) {
+        const answerInput = document.createElement('input');
+        answerInput.placeholder = 'Type your answer here';
+
+        const submitAnswerButton = document.createElement('button');
+        submitAnswerButton.textContent = 'Submit Answer';
+        submitAnswerButton.addEventListener('click', function() {
+            const answerText = answerInput.value.trim();
+            if (answerText) {
+                fetch('/api/answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ id: question._id, answer: answerText })
+                }).then(() => {
+                    answerElement.textContent = answerText;
+                    questionItem.removeChild(answerInput);
+                    questionItem.removeChild(submitAnswerButton);
+                });
+            }
+        });
+
+        questionItem.appendChild(answerInput);
+        questionItem.appendChild(submitAnswerButton);
+    }
+
+    document.getElementById('questions-container').appendChild(questionItem);
+}
+
+</script>
